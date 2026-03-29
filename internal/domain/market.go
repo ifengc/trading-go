@@ -42,6 +42,11 @@ type OrderBookDelta struct {
 	Asks []Level
 }
 
+type OrderBookUpdate struct {
+	OrderBook *OrderBook
+	Timestamp time.Time
+}
+
 type EventType string
 
 const (

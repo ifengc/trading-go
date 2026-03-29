@@ -25,7 +25,7 @@ type mockWebsocketClient struct {
 	dialCalled bool
 }
 
-func (m *mockWebsocketClient) Dial(ctx context.Context) error {
+func (m *mockWebsocketClient) Dial(_ context.Context) error {
 	m.dialCalled = true
 	return m.dialErr
 }
@@ -53,8 +53,8 @@ func (m *mockWebsocketClient) Done() <-chan struct{} {
 	return m.done
 }
 
-func TestNew(t *testing.T) {
-	t.Run("initialises correctly", func(t *testing.T) {
+func Test_New(t *testing.T) {
+	t.Run("initializes feed correctly", func(t *testing.T) {
 		// given
 		url := "ws://example.com"
 
@@ -68,17 +68,15 @@ func TestNew(t *testing.T) {
 	})
 }
 
-func TestFeed_Connect(t *testing.T) {
+func Test_Feed_Connect(t *testing.T) {
 	t.Run("fails when dial returns error", func(t *testing.T) {
 		// given
 		f := New("ws://example.com")
 		mock := &mockWebsocketClient{dialErr: errors.New("dial failed")}
 		f.client = mock
 
-		ctx := context.Background()
-
 		// when
-		err := f.Connect(ctx)
+		err := f.Connect(context.Background())
 
 		// then
 		assert.ErrorContains(t, err, "dial failed")
@@ -100,7 +98,7 @@ func TestFeed_Connect(t *testing.T) {
 	})
 }
 
-func TestFeed_Subscribe(t *testing.T) {
+func Test_Feed_Subscribe(t *testing.T) {
 	t.Run("sends correct subscription message", func(t *testing.T) {
 		// given
 		f := New("ws://example.com")
@@ -145,7 +143,6 @@ func TestFeed_Subscribe(t *testing.T) {
 	})
 }
 
-// Enhanced mock for streaming test
 type streamingMockClient struct {
 	mockWebsocketClient
 	messages [][]byte
@@ -168,8 +165,8 @@ func (m *streamingMockClient) Read() ([]byte, error) {
 	}
 }
 
-func TestFeed_Messages(t *testing.T) {
-	t.Run("emits snapshot event", func(t *testing.T) {
+func Test_Feed_Messages(t *testing.T) {
+	t.Run("emits snapshot event when snapshot message is received", func(t *testing.T) {
 		// given
 		snapshotData := krakenMessage{
 			Channel: "book",
@@ -210,7 +207,7 @@ func TestFeed_Messages(t *testing.T) {
 	})
 }
 
-func TestToEvent(t *testing.T) {
+func Test_ToEvent(t *testing.T) {
 	t.Run("parses valid update message", func(t *testing.T) {
 		// given
 		raw := []byte(`{
@@ -244,7 +241,7 @@ func TestToEvent(t *testing.T) {
 		assert.True(t, delta.Asks[0].Size.Equal(decimal.NewFromFloat(10.5)))
 	})
 
-	t.Run("returns empty event for empty data", func(t *testing.T) {
+	t.Run("returns empty event for message with empty data", func(t *testing.T) {
 		// given
 		raw := []byte(`{
 			"channel": "book",

@@ -39,8 +39,8 @@ func isClosed(ch <-chan struct{}) bool {
 	}
 }
 
-func TestNew(t *testing.T) {
-	t.Run("initialises config correctly", func(t *testing.T) {
+func Test_New(t *testing.T) {
+	t.Run("initializes client with given config", func(t *testing.T) {
 		// given
 		cfg := Config{URL: "ws://example.com"}
 
@@ -51,7 +51,7 @@ func TestNew(t *testing.T) {
 		assert.Equal(t, cfg, client.config)
 	})
 
-	t.Run("done channel is open on creation", func(t *testing.T) {
+	t.Run("creates an open done channel", func(t *testing.T) {
 		// given
 		client := New(Config{})
 
@@ -62,7 +62,7 @@ func TestNew(t *testing.T) {
 		assert.False(t, isClosed(done))
 	})
 
-	t.Run("conn is nil before dial", func(t *testing.T) {
+	t.Run("leaves connection nil before dial", func(t *testing.T) {
 		// given
 		client := New(Config{}).(*clientImpl)
 
@@ -74,8 +74,8 @@ func TestNew(t *testing.T) {
 	})
 }
 
-func TestSend(t *testing.T) {
-	t.Run("returns ErrNotConnected when conn is nil", func(t *testing.T) {
+func Test_Client_Send(t *testing.T) {
+	t.Run("returns ErrNotConnected when connection is nil", func(t *testing.T) {
 		// given
 		client := New(Config{})
 
@@ -86,7 +86,7 @@ func TestSend(t *testing.T) {
 		assert.ErrorIs(t, err, ErrNotConnected)
 	})
 
-	t.Run("propagates write error from conn", func(t *testing.T) {
+	t.Run("propagates write error from the connection", func(t *testing.T) {
 		// given
 		client := New(Config{}).(*clientImpl)
 		writeErr := errors.New("write failed")
@@ -99,7 +99,7 @@ func TestSend(t *testing.T) {
 		assert.ErrorIs(t, err, writeErr)
 	})
 
-	t.Run("succeeds when conn is healthy", func(t *testing.T) {
+	t.Run("succeeds when connection is healthy", func(t *testing.T) {
 		// given
 		client := New(Config{}).(*clientImpl)
 		client.conn = &mockConn{}
@@ -112,8 +112,8 @@ func TestSend(t *testing.T) {
 	})
 }
 
-func TestRead(t *testing.T) {
-	t.Run("returns ErrNotConnected when conn is nil", func(t *testing.T) {
+func Test_Client_Read(t *testing.T) {
+	t.Run("returns ErrNotConnected when connection is nil", func(t *testing.T) {
 		// given
 		client := New(Config{})
 
@@ -125,7 +125,7 @@ func TestRead(t *testing.T) {
 		assert.Nil(t, msg)
 	})
 
-	t.Run("returns payload on success", func(t *testing.T) {
+	t.Run("returns message payload on successful read", func(t *testing.T) {
 		// given
 		client := New(Config{}).(*clientImpl)
 		client.conn = &mockConn{readPayload: []byte("pong")}
@@ -138,7 +138,7 @@ func TestRead(t *testing.T) {
 		assert.Equal(t, []byte("pong"), msg)
 	})
 
-	t.Run("propagates read error from conn", func(t *testing.T) {
+	t.Run("propagates read error from the connection", func(t *testing.T) {
 		// given
 		client := New(Config{}).(*clientImpl)
 		readErr := errors.New("read failed")
@@ -153,8 +153,8 @@ func TestRead(t *testing.T) {
 	})
 }
 
-func TestClose(t *testing.T) {
-	t.Run("calls Close on conn", func(t *testing.T) {
+func Test_Client_Close(t *testing.T) {
+	t.Run("closes the underlying connection", func(t *testing.T) {
 		// given
 		client := New(Config{}).(*clientImpl)
 		mock := &mockConn{}
@@ -168,7 +168,7 @@ func TestClose(t *testing.T) {
 		assert.True(t, mock.closed)
 	})
 
-	t.Run("sets conn to nil after close", func(t *testing.T) {
+	t.Run("resets connection to nil after closing", func(t *testing.T) {
 		// given
 		client := New(Config{}).(*clientImpl)
 		client.conn = &mockConn{}
@@ -181,7 +181,7 @@ func TestClose(t *testing.T) {
 		assert.Nil(t, client.conn)
 	})
 
-	t.Run("sets conn to nil even when close returns error", func(t *testing.T) {
+	t.Run("resets connection even if close returns an error", func(t *testing.T) {
 		// given
 		client := New(Config{}).(*clientImpl)
 		client.conn = &mockConn{closeErr: errors.New("close failed")}
@@ -193,7 +193,7 @@ func TestClose(t *testing.T) {
 		assert.Nil(t, client.conn)
 	})
 
-	t.Run("closes done channel", func(t *testing.T) {
+	t.Run("signals closure via the done channel", func(t *testing.T) {
 		// given
 		client := New(Config{}).(*clientImpl)
 		client.conn = &mockConn{}
@@ -206,7 +206,7 @@ func TestClose(t *testing.T) {
 		assert.True(t, isClosed(client.Done()))
 	})
 
-	t.Run("is idempotent on double close", func(t *testing.T) {
+	t.Run("is idempotent when called multiple times", func(t *testing.T) {
 		// given
 		client := New(Config{}).(*clientImpl)
 		client.conn = &mockConn{}
@@ -220,10 +220,9 @@ func TestClose(t *testing.T) {
 		assert.NoError(t, err2)
 	})
 
-	t.Run("succeeds when conn is already nil", func(t *testing.T) {
+	t.Run("succeeds silently when connection is already nil", func(t *testing.T) {
 		// given
 		client := New(Config{})
-		// conn is nil from the start
 
 		// when
 		err := client.Close()
@@ -232,7 +231,7 @@ func TestClose(t *testing.T) {
 		assert.NoError(t, err)
 	})
 
-	t.Run("propagates close error from conn", func(t *testing.T) {
+	t.Run("propagates close error from the connection", func(t *testing.T) {
 		// given
 		closeErr := errors.New("close failed")
 		client := New(Config{}).(*clientImpl)

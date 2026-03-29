@@ -8,25 +8,27 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestNewOrderBook(t *testing.T) {
-	// given
-	symbol := Symbol{Base: BTC, Quote: USDT}
+func Test_NewOrderBook(t *testing.T) {
+	t.Run("initializes with empty bids and asks", func(t *testing.T) {
+		// given
+		symbol := Symbol{Base: BTC, Quote: USDT}
 
-	// when
-	ob := NewOrderBook(symbol)
+		// when
+		ob := NewOrderBook(symbol)
 
-	// then
-	assert.NotNil(t, ob)
-	assert.Equal(t, symbol, ob.Symbol)
+		// then
+		assert.NotNil(t, ob)
+		assert.Equal(t, symbol, ob.Symbol)
 
-	assert.NotNil(t, ob.Bids)
-	assert.Equal(t, 0, ob.Bids.Len())
+		assert.NotNil(t, ob.Bids)
+		assert.Equal(t, 0, ob.Bids.Len())
 
-	assert.NotNil(t, ob.Asks)
-	assert.Equal(t, 0, ob.Asks.Len())
+		assert.NotNil(t, ob.Asks)
+		assert.Equal(t, 0, ob.Asks.Len())
+	})
 }
 
-func TestUpdateBid(t *testing.T) {
+func Test_UpdateBid(t *testing.T) {
 	t.Run("adds new price level", func(t *testing.T) {
 		// given
 		ob := NewOrderBook(Symbol{Base: BTC, Quote: USDT})
@@ -85,7 +87,7 @@ func TestUpdateBid(t *testing.T) {
 	})
 }
 
-func TestUpdateAsk(t *testing.T) {
+func Test_UpdateAsk(t *testing.T) {
 	t.Run("adds new price level", func(t *testing.T) {
 		// given
 		ob := NewOrderBook(Symbol{Base: BTC, Quote: USDT})
@@ -144,8 +146,8 @@ func TestUpdateAsk(t *testing.T) {
 	})
 }
 
-func TestBestBidAndAsk(t *testing.T) {
-	t.Run("return nil for empty book", func(t *testing.T) {
+func Test_BestBidAndAsk(t *testing.T) {
+	t.Run("returns nil for empty book", func(t *testing.T) {
 		// given
 		ob := NewOrderBook(Symbol{Base: BTC, Quote: USDT})
 
@@ -159,7 +161,7 @@ func TestBestBidAndAsk(t *testing.T) {
 	})
 }
 
-func TestBestBids(t *testing.T) {
+func Test_BestBids(t *testing.T) {
 	t.Run("returns top N levels in descending order", func(t *testing.T) {
 		// given
 		ob := NewOrderBook(Symbol{Base: BTC, Quote: USDT})
@@ -191,7 +193,7 @@ func TestBestBids(t *testing.T) {
 	})
 }
 
-func TestBestAsks(t *testing.T) {
+func Test_BestAsks(t *testing.T) {
 	t.Run("returns top N levels in ascending order", func(t *testing.T) {
 		// given
 		ob := NewOrderBook(Symbol{Base: BTC, Quote: USDT})
@@ -223,7 +225,7 @@ func TestBestAsks(t *testing.T) {
 	})
 }
 
-func TestApplySnapshot(t *testing.T) {
+func Test_ApplySnapshot(t *testing.T) {
 	t.Run("replaces current state", func(t *testing.T) {
 		// given
 		ob := NewOrderBook(Symbol{Base: BTC, Quote: USDT})
@@ -253,7 +255,7 @@ func TestApplySnapshot(t *testing.T) {
 		assert.Equal(t, decimal.NewFromFloat(102.0), asks[0].Price)
 	})
 
-	t.Run("empty bids", func(t *testing.T) {
+	t.Run("handles empty bids", func(t *testing.T) {
 		// given
 		ob := NewOrderBook(Symbol{Base: BTC, Quote: USDT})
 		_ = ob.UpdateBid(decimal.NewFromFloat(100.0), decimal.NewFromFloat(1.0))
@@ -268,7 +270,7 @@ func TestApplySnapshot(t *testing.T) {
 		assert.Nil(t, ob.BestBid())
 	})
 
-	t.Run("empty asks", func(t *testing.T) {
+	t.Run("handles empty asks", func(t *testing.T) {
 		// given
 		ob := NewOrderBook(Symbol{Base: BTC, Quote: USDT})
 		_ = ob.UpdateBid(decimal.NewFromFloat(100.0), decimal.NewFromFloat(1.0))
@@ -283,7 +285,7 @@ func TestApplySnapshot(t *testing.T) {
 		assert.Nil(t, ob.BestAsk())
 	})
 
-	t.Run("both empty", func(t *testing.T) {
+	t.Run("handles both empty", func(t *testing.T) {
 		// given
 		ob := NewOrderBook(Symbol{Base: BTC, Quote: USDT})
 		_ = ob.UpdateBid(decimal.NewFromFloat(100.0), decimal.NewFromFloat(1.0))
@@ -298,7 +300,7 @@ func TestApplySnapshot(t *testing.T) {
 	})
 }
 
-func TestSpread(t *testing.T) {
+func Test_Spread(t *testing.T) {
 	t.Run("returns nil for empty book", func(t *testing.T) {
 		// given
 		ob := NewOrderBook(Symbol{Base: BTC, Quote: USDT})
@@ -349,7 +351,7 @@ func TestSpread(t *testing.T) {
 	})
 }
 
-func TestIsCrossed(t *testing.T) {
+func Test_IsCrossed(t *testing.T) {
 	t.Run("returns false for empty book", func(t *testing.T) {
 		// given
 		ob := NewOrderBook(Symbol{Base: BTC, Quote: USDT})
@@ -401,34 +403,36 @@ func TestIsCrossed(t *testing.T) {
 	})
 }
 
-func TestOrderBookConcurrency(t *testing.T) {
-	// given
-	ob := NewOrderBook(Symbol{Base: BTC, Quote: USDT})
-	iterations := 100
-	workers := 4
+func Test_OrderBook_Concurrency(t *testing.T) {
+	t.Run("handles concurrent updates and reads", func(t *testing.T) {
+		// given
+		ob := NewOrderBook(Symbol{Base: BTC, Quote: USDT})
+		iterations := 100
+		workers := 4
 
-	done := make(chan bool)
+		done := make(chan bool)
 
-	// when/then
-	for i := 0; i < workers; i++ {
-		go func(workerID int) {
-			for j := 0; j < iterations; j++ {
-				price := decimal.NewFromInt(int64(j))
-				size := decimal.NewFromInt(int64(workerID + 1))
+		// when/then
+		for i := 0; i < workers; i++ {
+			go func(workerID int) {
+				for j := 0; j < iterations; j++ {
+					price := decimal.NewFromInt(int64(j))
+					size := decimal.NewFromInt(int64(workerID + 1))
 
-				_ = ob.UpdateBid(price, size)
-				_ = ob.UpdateAsk(price.Add(decimal.NewFromInt(10)), size)
+					_ = ob.UpdateBid(price, size)
+					_ = ob.UpdateAsk(price.Add(decimal.NewFromInt(10)), size)
 
-				_ = ob.BestBid()
-				_ = ob.BestAsk()
-				_ = ob.Spread()
-				_ = ob.IsCrossed()
-			}
-			done <- true
-		}(i)
-	}
+					_ = ob.BestBid()
+					_ = ob.BestAsk()
+					_ = ob.Spread()
+					_ = ob.IsCrossed()
+				}
+				done <- true
+			}(i)
+		}
 
-	for range workers {
-		<-done
-	}
+		for i := 0; i < workers; i++ {
+			<-done
+		}
+	})
 }

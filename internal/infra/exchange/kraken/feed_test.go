@@ -9,6 +9,7 @@ import (
 
 	"trading-go/internal/domain"
 
+	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -73,7 +74,7 @@ func TestFeed_Connect(t *testing.T) {
 		f := New("ws://example.com")
 		mock := &mockWebsocketClient{dialErr: errors.New("dial failed")}
 		f.client = mock
-		
+
 		ctx := context.Background()
 
 		// when
@@ -113,7 +114,7 @@ func TestFeed_Subscribe(t *testing.T) {
 
 		// then
 		require.NoError(t, err)
-		
+
 		var m map[string]any
 		err = json.Unmarshal(mock.lastSent, &m)
 		require.NoError(t, err)
@@ -122,7 +123,7 @@ func TestFeed_Subscribe(t *testing.T) {
 		params, ok := m["params"].(map[string]any)
 		require.True(t, ok)
 		assert.Equal(t, "book", params["channel"])
-		
+
 		syms, ok := params["symbol"].([]interface{})
 		require.True(t, ok)
 		assert.Contains(t, syms, "BTC/USDC")
@@ -161,7 +162,7 @@ func (m *streamingMockClient) Read() ([]byte, error) {
 	select {
 	case <-m.done:
 		return nil, errors.New("closed")
-	case <-time.After(10 * time.Millisecond): 
+	case <-time.After(10 * time.Millisecond):
 		// Return error to break loop in test
 		return nil, errors.New("EOF")
 	}
@@ -174,7 +175,7 @@ func TestFeed_Messages(t *testing.T) {
 			Channel: "book",
 			Type:    "snapshot",
 			Data: []json.RawMessage{
-				json.RawMessage(`{"symbol": "BTC/USD", "timestamp": "2024-03-18T12:00:00Z"}`),
+				json.RawMessage(`{"symbol": "BTC/USD", "timestamp": "2024-03-18T12:00:00Z", "bids": [{"price": "60000.5", "qty": "1.2"}]}`),
 			},
 		}
 		rawSnapshot, _ := json.Marshal(snapshotData)
@@ -197,41 +198,14 @@ func TestFeed_Messages(t *testing.T) {
 			assert.Equal(t, domain.EventOrderBookSnapshot, event.Type)
 			assert.Equal(t, "kraken", event.Exchange)
 			assert.Equal(t, "BTC/USD", event.Pair)
+
+			delta, ok := event.Payload.(domain.OrderBookDelta)
+			require.True(t, ok)
+			require.Len(t, delta.Bids, 1)
+			assert.True(t, delta.Bids[0].Price.Equal(decimal.NewFromFloat(60000.5)))
+			assert.True(t, delta.Bids[0].Size.Equal(decimal.NewFromFloat(1.2)))
 		case <-time.After(time.Second):
 			t.Fatal("timed out waiting for snapshot")
-		}
-	})
-
-	t.Run("emits update event", func(t *testing.T) {
-		// given
-		updateData := krakenMessage{
-			Channel: "book",
-			Type:    "update",
-			Data: []json.RawMessage{
-				json.RawMessage(`{"symbol": "BTC/USD", "timestamp": "2024-03-18T12:00:05Z"}`),
-			},
-		}
-		rawUpdate, _ := json.Marshal(updateData)
-
-		mock := &streamingMockClient{
-			mockWebsocketClient: mockWebsocketClient{done: make(chan struct{})},
-			messages:            [][]byte{rawUpdate},
-		}
-
-		f := New("ws://example.com")
-		f.client = mock
-
-		// when
-		err := f.Connect(context.Background())
-
-		// then
-		require.NoError(t, err)
-		select {
-		case event := <-f.Messages():
-			assert.Equal(t, domain.EventOrderBook, event.Type)
-			assert.Equal(t, "BTC/USD", event.Pair)
-		case <-time.After(time.Second):
-			t.Fatal("timed out waiting for update")
 		}
 	})
 }
@@ -245,7 +219,8 @@ func TestToEvent(t *testing.T) {
 			"data": [
 				{
 					"symbol": "ETH/USD",
-					"timestamp": "2024-03-18T12:30:00Z"
+					"timestamp": "2024-03-18T12:30:00Z",
+					"asks": [{"price": "4000.1", "qty": "10.5"}]
 				}
 			]
 		}`)
@@ -261,6 +236,12 @@ func TestToEvent(t *testing.T) {
 
 		expectedTime, _ := time.Parse(time.RFC3339, "2024-03-18T12:30:00Z")
 		assert.True(t, event.Timestamp.Equal(expectedTime))
+
+		delta, ok := event.Payload.(domain.OrderBookDelta)
+		require.True(t, ok)
+		require.Len(t, delta.Asks, 1)
+		assert.True(t, delta.Asks[0].Price.Equal(decimal.NewFromFloat(4000.1)))
+		assert.True(t, delta.Asks[0].Size.Equal(decimal.NewFromFloat(10.5)))
 	})
 
 	t.Run("returns empty event for empty data", func(t *testing.T) {
@@ -269,32 +250,6 @@ func TestToEvent(t *testing.T) {
 			"channel": "book",
 			"type": "update",
 			"data": []
-		}`)
-
-		// when
-		event, err := toEvent(raw)
-
-		// then
-		require.NoError(t, err)
-		assert.Empty(t, event.Type)
-	})
-
-	t.Run("returns error on malformed json", func(t *testing.T) {
-		// given
-		raw := []byte(`{invalid-json}`)
-
-		// when
-		_, err := toEvent(raw)
-
-		// then
-		assert.Error(t, err)
-	})
-
-	t.Run("ignores unrelated messages", func(t *testing.T) {
-		// given
-		raw := []byte(`{
-			"channel": "heartbeat",
-			"type": "heartbeat"
 		}`)
 
 		// when

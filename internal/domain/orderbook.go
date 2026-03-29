@@ -5,40 +5,10 @@ import (
 	"sync"
 
 	"github.com/google/btree"
-	"github.com/shopspring/decimal"
-)
-
-type Asset string
-
-const (
-	BTC  Asset = "BTC"
-	ETH  Asset = "ETH"
-	USDC Asset = "USDC"
-	USDT Asset = "USDT"
 )
 
 // TODO: confirm efficient priceDegree values
 const priceDegree = 32
-
-func (a Asset) String() string {
-	return string(a)
-}
-
-type Symbol struct {
-	Base  Asset
-	Quote Asset
-}
-
-func (s Symbol) String() string {
-	return s.Base.String() + "/" + s.Quote.String()
-}
-
-type Price = decimal.Decimal
-type Size = decimal.Decimal
-type Level struct {
-	Price Price
-	Size  Size
-}
 
 type OrderBook struct {
 	mu     sync.RWMutex

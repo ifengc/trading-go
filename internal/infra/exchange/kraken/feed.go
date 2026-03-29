@@ -7,11 +7,31 @@ import (
 	"time"
 	"trading-go/internal/domain"
 	"trading-go/internal/infra/websocket"
+
+	"github.com/shopspring/decimal"
 )
 
 type Feed struct {
 	client websocket.Client
 	out    chan domain.MarketEvent
+}
+
+type krakenLevel struct {
+	Price decimal.Decimal `json:"price"`
+	Qty   decimal.Decimal `json:"qty"`
+}
+
+type krakenBookData struct {
+	Symbol    string        `json:"symbol"`
+	Timestamp string        `json:"timestamp"`
+	Bids      []krakenLevel `json:"bids"`
+	Asks      []krakenLevel `json:"asks"`
+}
+
+type krakenMessage struct {
+	Channel string            `json:"channel"`
+	Type    string            `json:"type"`
+	Data    []json.RawMessage `json:"data"`
 }
 
 func New(url string) *Feed {
@@ -88,17 +108,6 @@ func (f *Feed) readLoop() {
 	}
 }
 
-type krakenMessage struct {
-	Channel string            `json:"channel"`
-	Type    string            `json:"type"`
-	Data    []json.RawMessage `json:"data"`
-}
-
-type krakenBookData struct {
-	Symbol    string `json:"symbol"`
-	Timestamp string `json:"timestamp"`
-}
-
 func toEvent(raw []byte) (domain.MarketEvent, error) {
 	var msg krakenMessage
 	if err := json.Unmarshal(raw, &msg); err != nil {
@@ -122,14 +131,30 @@ func toEvent(raw []byte) (domain.MarketEvent, error) {
 			eventType = domain.EventOrderBookSnapshot
 		}
 
+		delta := domain.OrderBookDelta{
+			Bids: toLevels(data.Bids),
+			Asks: toLevels(data.Asks),
+		}
+
 		return domain.MarketEvent{
 			Type:      eventType,
 			Exchange:  "kraken",
 			Pair:      data.Symbol,
 			Timestamp: ts,
-			Payload:   msg.Data[0],
+			Payload:   delta,
 		}, nil
 	}
 
 	return domain.MarketEvent{}, nil
+}
+
+func toLevels(levels []krakenLevel) []domain.Level {
+	res := make([]domain.Level, len(levels))
+	for i, l := range levels {
+		res[i] = domain.Level{
+			Price: l.Price,
+			Size:  l.Qty,
+		}
+	}
+	return res
 }

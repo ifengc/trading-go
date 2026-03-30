@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"log/slog"
+	"strings"
 	"time"
 	"trading-go/internal/domain"
 	"trading-go/internal/infra/websocket"
@@ -138,14 +139,22 @@ func toEvent(raw []byte) (domain.MarketEvent, error) {
 
 		return domain.MarketEvent{
 			Type:      eventType,
-			Exchange:  "kraken",
-			Pair:      data.Symbol,
+			Exchange:  domain.ExchangeKraken,
+			Pair:      parseSymbol(data.Symbol),
 			Timestamp: ts,
 			Payload:   delta,
 		}, nil
 	}
 
 	return domain.MarketEvent{}, nil
+}
+
+func parseSymbol(s string) domain.Symbol {
+	parts := strings.SplitN(s, "/", 2)
+	if len(parts) == 2 {
+		return domain.Symbol{Base: domain.Asset(parts[0]), Quote: domain.Asset(parts[1])}
+	}
+	return domain.Symbol{Base: domain.Asset(s)}
 }
 
 func toLevels(levels []krakenLevel) []domain.Level {

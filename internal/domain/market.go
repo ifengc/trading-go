@@ -56,10 +56,17 @@ const (
 	EventTicker            EventType = "ticker"
 )
 
+type Exchange string
+
+const (
+	ExchangeBinance Exchange = "binance"
+	ExchangeKraken  Exchange = "kraken"
+)
+
 type MarketEvent struct {
 	Type      EventType
-	Exchange  string
-	Pair      string
+	Exchange  Exchange
+	Pair      Symbol
 	Timestamp time.Time
 	Payload   any
 }

@@ -67,7 +67,7 @@ func (p *OrderBookProvider) readLoop(ctx context.Context) {
 }
 
 func (p *OrderBookProvider) handleOrderBookSnapshot(event domain.MarketEvent) {
-	ob, ok := p.orderBooks[event.Pair]
+	ob, ok := p.orderBooks[event.Pair.String()]
 	if !ok {
 		return
 	}
@@ -87,7 +87,7 @@ func (p *OrderBookProvider) handleOrderBookSnapshot(event domain.MarketEvent) {
 }
 
 func (p *OrderBookProvider) handleOrderBookUpdate(event domain.MarketEvent) {
-	ob, ok := p.orderBooks[event.Pair]
+	ob, ok := p.orderBooks[event.Pair.String()]
 	if !ok {
 		return
 	}

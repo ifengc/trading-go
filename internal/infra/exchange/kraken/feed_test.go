@@ -193,8 +193,8 @@ func Test_Feed_Messages(t *testing.T) {
 		select {
 		case event := <-f.Messages():
 			assert.Equal(t, domain.EventOrderBookSnapshot, event.Type)
-			assert.Equal(t, "kraken", event.Exchange)
-			assert.Equal(t, "BTC/USD", event.Pair)
+			assert.Equal(t, domain.ExchangeKraken, event.Exchange)
+			assert.Equal(t, domain.Symbol{Base: "BTC", Quote: "USD"}, event.Pair)
 
 			delta, ok := event.Payload.(domain.OrderBookDelta)
 			require.True(t, ok)
@@ -228,8 +228,8 @@ func Test_ToEvent(t *testing.T) {
 		// then
 		require.NoError(t, err)
 		assert.Equal(t, domain.EventOrderBook, event.Type)
-		assert.Equal(t, "ETH/USD", event.Pair)
-		assert.Equal(t, "kraken", event.Exchange)
+		assert.Equal(t, domain.Symbol{Base: "ETH", Quote: "USD"}, event.Pair)
+		assert.Equal(t, domain.ExchangeKraken, event.Exchange)
 
 		expectedTime, _ := time.Parse(time.RFC3339, "2024-03-18T12:30:00Z")
 		assert.True(t, event.Timestamp.Equal(expectedTime))

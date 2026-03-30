@@ -95,7 +95,7 @@ func Test_OrderBookProvider_HandleSnapshot(t *testing.T) {
 
 		event := domain.MarketEvent{
 			Type:      domain.EventOrderBookSnapshot,
-			Pair:      "BTC/USDC",
+			Pair:      domain.Symbol{Base: domain.BTC, Quote: domain.USDC},
 			Timestamp: time.Now(),
 			Payload:   delta,
 		}
@@ -153,7 +153,7 @@ func Test_OrderBookProvider_HandleUpdate(t *testing.T) {
 
 		event := domain.MarketEvent{
 			Type:      domain.EventOrderBook,
-			Pair:      "BTC/USDC",
+			Pair:      domain.Symbol{Base: domain.BTC, Quote: domain.USDC},
 			Timestamp: time.Now(),
 			Payload:   delta,
 		}
@@ -198,7 +198,7 @@ func Test_OrderBookProvider_ReadLoop(t *testing.T) {
 
 		event := domain.MarketEvent{
 			Type:      domain.EventOrderBookSnapshot,
-			Pair:      "BTC/USDC",
+			Pair:      domain.Symbol{Base: domain.BTC, Quote: domain.USDC},
 			Timestamp: time.Now(),
 			Payload:   delta,
 		}

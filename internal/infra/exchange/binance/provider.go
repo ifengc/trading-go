@@ -1,4 +1,4 @@
-package kraken
+package binance
 
 import (
 	"context"
@@ -15,7 +15,7 @@ type OrderBookProvider struct {
 }
 
 func NewOrderBookProvider(symbols []domain.Symbol) *OrderBookProvider {
-	url := "wss://ws.kraken.com/v2"
+	url := "wss://stream.binance.com:9443/stream"
 	feed := New(url)
 
 	obs := make(map[string]*domain.OrderBook)
@@ -121,7 +121,7 @@ func (p *OrderBookProvider) Updates() <-chan domain.OrderBookUpdate {
 }
 
 func (p *OrderBookProvider) Exchange() domain.Exchange {
-	return domain.ExchangeKraken
+	return domain.ExchangeBinance
 }
 
 func (p *OrderBookProvider) Close() error {

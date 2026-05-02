@@ -59,6 +59,7 @@ const (
 type Exchange string
 
 const (
+	ExchangeAlpaca  Exchange = "alpaca"
 	ExchangeBinance Exchange = "binance"
 	ExchangeKraken  Exchange = "kraken"
 )

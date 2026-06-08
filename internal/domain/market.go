@@ -78,3 +78,21 @@ type MarketDataFeed interface {
 	Messages() <-chan MarketEvent
 	Close() error
 }
+
+type ExchangeContribution struct {
+	Exchange Exchange
+	Size     Size
+}
+
+type AggregatedLevel struct {
+	Price         Price
+	TotalSize     Size
+	Contributions []ExchangeContribution
+}
+
+type AggregatedOrderBookUpdate struct {
+	Symbol    Symbol
+	Bids      []AggregatedLevel // sorted best (highest price) first
+	Asks      []AggregatedLevel // sorted best (lowest price) first
+	Timestamp time.Time
+}

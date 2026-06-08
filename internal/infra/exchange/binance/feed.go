@@ -20,9 +20,9 @@ type Feed struct {
 }
 
 type binanceBookData struct {
-	LastUpdateID int64             `json:"lastUpdateId"`
-	Bids         [][]string        `json:"bids"`
-	Asks         [][]string        `json:"asks"`
+	LastUpdateID int64      `json:"lastUpdateId"`
+	Bids         [][]string `json:"bids"`
+	Asks         [][]string `json:"asks"`
 }
 
 type binanceMessage struct {

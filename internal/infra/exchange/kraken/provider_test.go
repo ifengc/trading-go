@@ -143,7 +143,7 @@ func Test_OrderBookProvider_HandleUpdate(t *testing.T) {
 
 		delta := domain.OrderBookDelta{
 			Bids: []domain.Level{
-				{Price: decimal.NewFromFloat(60000), Size: decimal.Zero},            // remove bid
+				{Price: decimal.NewFromFloat(60000), Size: decimal.Zero},              // remove bid
 				{Price: decimal.NewFromFloat(59900), Size: decimal.NewFromFloat(2.0)}, // add bid
 			},
 			Asks: []domain.Level{

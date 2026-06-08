@@ -187,8 +187,8 @@ func Test_OrderBookProvider_ReadLoop(t *testing.T) {
 		go p.readLoop(ctx)
 
 		event := domain.MarketEvent{
-			Type: domain.EventOrderBookSnapshot,
-			Pair: domain.Symbol{Base: domain.BTC, Quote: domain.USDC},
+			Type:      domain.EventOrderBookSnapshot,
+			Pair:      domain.Symbol{Base: domain.BTC, Quote: domain.USDC},
 			Timestamp: time.Now(),
 			Payload: domain.OrderBookDelta{
 				Bids: []domain.Level{{Price: decimal.NewFromFloat(60000), Size: decimal.NewFromFloat(1)}},
